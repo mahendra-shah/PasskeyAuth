@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Rise of Passkeys: A Secure Future for Logins</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            /* Dark background */
+            color: #ffffff;
+            /* Light text color */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .navbar {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .navbar button {
+            background: none;
+            border: none;
+            color: #6200ea;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .navbar span {
+            flex-grow: 1;
+            text-align: center;
+        }
+
+        .content {
+            max-width: 800px;
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        p {
+            margin: 10px 0;
+        }
+
+        .image-container {
+            margin: 20px 0;
+            width: 100%;
+            max-width: 600px;
+            height: 300px;
+            overflow: hidden;
+            border-radius: 8px;
+            position: relative;
+        }
+
+        .image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            animation: carousel 20s infinite linear;
+        }
+
+        @keyframes carousel {
+            0% {
+                transform: translateX(0);
+            }
+
+            100% {
+                transform: translateX(-100%);
+            }
+        }
+
+        .dummy-data {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            .content {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="navbar">
+        <button id="profile-button">Profile</button>
+        <span id="user-name"></span>
+        <button id="logout-button">Logout</button>
+    </div>
+
+    <div class="content">
+        <h1>The Rise of Passkeys: A Secure Future for Logins</h1>
+        <p>Tired of remembering countless passwords? Passkeys are here to revolutionize the way we authenticate online.
+        </p>
+        <p>These advanced credentials, powered by biometrics and encryption, offer a more secure and convenient login
+            experience.</p>
+        <div class="image-container">
+            <img src="https://picsum.photos/600/300" alt="Passkey Image 1" />
+            <img src="https://picsum.photos/600/300" alt="Passkey Image 2" />
+            <img src="https://picsum.photos/600/300" alt="Passkey Image 3" />
+        </div>
+        <h2>Unlocking the Benefits of Passkeys</h2>
+        <p>Here are some of the key advantages of embracing passkey technology:</p>
+        <ul>
+            <li><strong>Enhanced Security:</strong> Passkeys leverage your device's built-in security features, like
+                fingerprint sensors and facial recognition, to protect your accounts from unauthorized access.</li>
+            <li><strong>Effortless Convenience:</strong> No more struggling with passwords. Passkeys enable quick and
+                seamless logins with a simple touch or glance.</li>
+            <li><strong>Phishing-Resistant:</strong> Passkeys are designed to be highly resistant to phishing attacks,
+                protecting your sensitive data.</li>
+            <li><strong>Cross-Platform Compatibility:</strong> Passkeys work seamlessly across different devices and
+                platforms, making them universally accessible.</li>
+        </ul>
+        <h2>How Passkeys Work</h2>
+        <p>Passkeys rely on public-key cryptography, where a unique pair of keys is generated for each user. The public
+            key is stored on the website or service, while the private key is stored securely on your device. When you
+            attempt to log in, your device uses the private key to verify your identity.</p>
+        <h2>The Future of Logins</h2>
+        <p>As passkey technology continues to evolve, we can expect even more innovative solutions that enhance security
+            and convenience. These digital keys hold the potential to transform the way we interact with online
+            services, making them both secure and user-friendly.</p>
+        <div class="dummy-data">
+            <h2>Ready to Embrace the Future of Logins?</h2>
+            <p>Many popular browsers and operating systems are already supporting passkey functionality. Start exploring
+                this secure and convenient way to access your favorite websites and apps today.</p>
+        </div>
+    </div>
+
+    <script>
+        // Check if user is already logged in
+        async function checkAuthentication() {
+            const token = localStorage.getItem('jwtToken');
+            if (!token) {
+                window.location.replace('signup.html'); // Redirect to signup if not logged in
+            } else {
+                // Fetch user data from /me endpoint
+                const response = await fetch('/me', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const userData = await response.json();
+                    document.getElementById('user-name').textContent = `Welcome, ${userData.name}`;
+                } else {
+                    window.location.replace('signup.html'); // Redirect if user data fetch fails
+                }
+            }
+        }
+
+        checkAuthentication();
+
+        // Logout functionality
+        document.getElementById('logout-button').addEventListener('click', () => {
+            localStorage.removeItem('jwtToken'); // Clear token
+            localStorage.removeItem('passkey'); // Clear passkey
+            localStorage.removeItem('user'); // Clear user data
+            window.location.replace('signup.html'); // Redirect to signup
+        });
+
+        // Redirect to profile setup
+        document.getElementById('profile-button').addEventListener('click', () => {
+            window.location.replace('profile.html'); // Redirect to profile setup
+        });
+    </script>
+</body>
+
+</html>

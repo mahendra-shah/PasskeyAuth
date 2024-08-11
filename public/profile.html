@@ -4,52 +4,152 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profile</title>
+    <title>Profile Setup</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            /* Dark background */
+            color: #ffffff;
+            /* Light text color */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            /* Semi-transparent background */
+            backdrop-filter: blur(10px);
+            /* Glass effect */
+            border-radius: 15px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+            padding: 40px;
+            width: 90%;
+            /* Responsive width */
+            max-width: 400px;
+            /* Max width for larger screens */
+            text-align: center;
+            /* Center text */
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #6200ea;
+            /* Primary button color */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            background-color: #3700b3;
+            /* Darker shade on hover */
+        }
+    </style>
 </head>
 
 <body>
-    <h1>Welcome to your profile</h1>
-    <button id="reg-passkey-btn">create a pass key</button>
-
+    <div class="container">
+        <h1>Profile Setup</h1>
+        <p>Set up your passkey for secure login.</p>
+        <button id="setup-passkey">Set Up Passkey</button>
+        <button id="logout">Logout</button>
+        <button id="home">Home</button>
+    </div>
 
     <script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
     <script>
-        const regPasskeyBtn = document.getElementById('reg-passkey-btn');
-        regPasskeyBtn.addEventListener('click', async (e) => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const user_id = urlParams.get('user_id');
-            console.log(user_id, 'user_id');
-            const response = await fetch(`/register-challenge/${user_id}`, {
-                method: 'POST',
+
+        // Check if user is already logged in
+        async function checkAuthentication() {
+            const token = localStorage.getItem('jwtToken');
+            const passkey = localStorage.getItem('passkey');
+            if (!token) {
+                window.location.replace('signup.html'); // Redirect to signup if not logged in
+
+            }
+            const user = await fetch('/me', {
+                method: 'GET',
                 headers: {
-                    'Content-Type': 'application/json'
-                },
-                // body: JSON.stringify({
-                //     user_id,
-                // })
+                    Authorization: `Bearer ${token}`
+                }
             });
-            const data = await response.json();
-            const { options } = data;
-            console.log(options, 'data');
+            if (!user) {
+                localStorage.removeItem('jwtToken'); // Clear token
+                window.location.replace('signup.html'); // Redirect to signup if token is invalid
+            }
+            console.log(passkey, 'pass');
+            if (passkey) {
+                window.location.replace('home.html'); // Redirect to home if passkey is already set up
+            }
+        }
 
-            const credential = await SimpleWebAuthnBrowser.startRegistration(options);
-            console.log(credential, 'credential webauthn');
+        checkAuthentication();
 
-            await fetch('/register-verify', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    cred: credential,
-                    user_id
-                })
-            })
+        document.getElementById('setup-passkey').addEventListener('click', async () => {
+            const user = JSON.parse(localStorage.getItem('user')); // Assuming you stored email during signup
+            const user_id = user.id;
+            console.log(user, 'user_id');
+            try {
+                const response = await fetch(`/register-challenge/${user_id}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
 
-            window.location.replace(`http://localhost:5002/login.html`);
+                if (!response.ok) throw new Error('Failed to get login challenge');
 
-        })
+                const data = await response.json();
+                const { options } = data;
+
+                // Start registration process
+                const credential = await SimpleWebAuthnBrowser.startRegistration(options);
+                console.log(credential, 'credential webauthn');
+
+                // Verify registration response with the server
+                const verifyResponse = await fetch(`/register-verify`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        cred: credential,
+                        user_id
+                    })
+                });
+
+                if (!verifyResponse.ok) throw new Error('Failed to verify registration');
+
+                alert('Passkey setup successful!');
+                localStorage.setItem('passkey', 'true'); // Set passkey setup flag
+                window.location.replace('home.html'); // Redirect to home page
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Passkey setup failed. Please try again.');
+            }
+        });
+
+        document.getElementById('logout').addEventListener('click', () => {
+            localStorage.removeItem('jwtToken'); // Clear token
+            window.location.replace('index.html'); // Redirect to signup
+        });
+
+        document.getElementById('home').addEventListener('click', () => {
+            window.location.replace('home.html'); // Redirect to home page
+        });
     </script>
-
+</body>
 
 </html>

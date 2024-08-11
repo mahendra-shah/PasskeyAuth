@@ -11,6 +11,8 @@ const {
     generateAuthenticationOptions, 
     verifyAuthenticationResponse
 } = require('@simplewebauthn/server');
+const jwt = require('jsonwebtoken');
+const winston = require('winston');
 require('dotenv').config();
 
 const expectedOrigin = process.env.EXPECTED_ORIGIN || 'http://localhost:5002';
@@ -26,22 +28,54 @@ app.use(cors());
 app.use(express.static('./public'));
 app.use(express.json());
 
+const logger = winston.createLogger({
+    level: 'info', // Log level
+    format: winston.format.combine(
+        winston.format.timestamp(), // Add timestamp to logs
+        winston.format.printf(({ level, message, timestamp }) => {
+            return `[${timestamp}] ${level}: ${message}`;
+        }) // Custom log format
+    ),
+    transports: [
+        new winston.transports.Console(), // Log to console
+    ],
+});
 
-app.get('/h', (req, res) => {
-    res.send("Hello World");
-    res.send("<h1>I'm fine :)</h1>");
+// Middleware to log incoming requests
+app.use((req, res, next) => {
+    logger.info(`Received a ${req.method} request for ${req.url}`);
+    next(); // Proceed to the next middleware or route handler
+});
+
+
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: "success", message: "I'm fine :)" });
 });
 
 app.post('/register', async (req, res) => {
-    const { email, password } = req.body;
+    const { email, password, name } = req.body;
     const ifUserExists = await knex('b_users').where({ email }).first();
     if (ifUserExists) {
         return res.status(201).json(ifUserExists);
     }
     const hashedPassword = await bcrypt.hash(password, 10); // 10 is the salt rounds
 
-    const user = await knex('b_users').insert({ email, password: hashedPassword }).returning('*');
+    const user = await knex('b_users').insert({ name, email, password: hashedPassword }).returning('*');
     res.status(201).json(user[0]);
+});
+
+app.post('/login', async (req, res) => {
+    const { email, password } = req.body;
+    const user = await knex('b_users').where({ email }).first();
+    if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+    }
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+        return res.status(401).json({ message: 'Invalid password' });
+    }
+    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '5h' });
+    return res.json({ token, user });
 });
 
 app.post("/register-challenge/:user_id", async (req, res) => {
@@ -98,7 +132,6 @@ app.post('/register-verify', async (req, res) => {
         counter: 0, // Reset the counter
     });
 
-    console.log('Verification success');
     return res.json({ message: 'Verification success' });
 });
 
@@ -129,7 +162,6 @@ app.post('/login-challenge/:email', async (req, res) => {
         challenge: challengePayload.challenge,
     });
     
-    console.log('login challenge generated');
     return res.json({ options: challengePayload });
 });
 
@@ -173,6 +205,24 @@ app.post('/login-verify', async (req, res) => {
         console.error('Error verifying authentication:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
+});
+
+app.get('/me', async (req, res) => {
+    const token = req.headers.authorization.split(' ')[1];
+    // console.log(token, 'token');
+    if (!token) {
+        return res.status(401).json({ message: 'Token is required' });
+    }
+    jwt.verify(token, process.env.JWT_SECRET, async (err, decoded) => {
+        if (err) {
+            return res.status(401).json({ message: 'Invalid token' });
+        }
+        const user = await knex('b_users').where({ id: decoded.id }).first();
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        return res.json(user);
+    });
 });
 
 
