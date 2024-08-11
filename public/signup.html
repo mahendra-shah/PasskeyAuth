@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Biometric Login</title>
+</head>
+
+<body>
+    <form id="form-reg">
+        <input type="text" placeholder="email" id="email" />
+        <input type="password" placeholder="password" id="password" />
+        <button type="submit">Register</button>
+    </form>
+
+    <script>
+        const form = document.getElementById('form-reg');
+        const email = document.getElementById('email');
+        const password = document.getElementById('password');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const response = await fetch('/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    email: email.value,
+                    password: password.value
+                })
+            });
+            const data = await response.json();
+            console.log(data, 'after register');
+            const { id } = data;
+
+            window.location.replace(`http://localhost:5002/profile.html?user_id=${id}`);
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile</title>
+</head>
+
+<body>
+    <h1>Welcome to your profile</h1>
+    <button id="reg-passkey-btn">create a pass key</button>
+
+
+    <script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
+    <script>
+        const regPasskeyBtn = document.getElementById('reg-passkey-btn');
+        regPasskeyBtn.addEventListener('click', async (e) => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const user_id = urlParams.get('user_id');
+            console.log(user_id, 'user_id');
+            const response = await fetch(`/register-challenge/${user_id}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                // body: JSON.stringify({
+                //     user_id,
+                // })
+            });
+            const data = await response.json();
+            const { options } = data;
+            console.log(options, 'data');
+
+            const credential = await SimpleWebAuthnBrowser.startRegistration(options);
+            console.log(credential, 'credential webauthn');
+
+            await fetch('/register-verify', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    cred: credential,
+                    user_id
+                })
+            })
+
+            window.location.replace(`http://localhost:5002/login.html`);
+
+        })
+    </script>
+
+
+</html>
