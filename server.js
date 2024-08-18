@@ -56,7 +56,7 @@ app.post('/register', async (req, res) => {
     const { email, password, name } = req.body;
     const ifUserExists = await knex('b_users').where({ email }).first();
     if (ifUserExists) {
-        return res.status(201).json(ifUserExists);
+        return res.status(201).json({msg: "Already a User", data: ifUserExists});
     }
     const hashedPassword = await bcrypt.hash(password, 10); // 10 is the salt rounds
 
@@ -75,7 +75,10 @@ app.post('/login', async (req, res) => {
         return res.status(401).json({ message: 'Invalid password' });
     }
     const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '5h' });
-    return res.json({ token, user });
+    return res.json({ token, user: {
+        id: user.id,
+        name: user.name,
+    } });
 });
 
 app.post("/register-challenge/:user_id", async (req, res) => {
@@ -141,8 +144,8 @@ app.post('/login-challenge/:email', async (req, res) => {
     if (!email) return res.status(400).json({ message: 'Email is required' });
 
     const ifUserExists = await knex('b_users').where({ email }).first();
-    if (!ifUserExists) {
-        return res.status(404).json({ message: 'User not found' });
+    if (!ifUserExists || !ifUserExists.challenge) {
+        return res.status(404).json({ message: 'User not found or passkey not registered' });
     }
 
     let credentialId = ifUserExists.credential_id;
@@ -196,7 +199,15 @@ app.post('/login-verify', async (req, res) => {
             await knex('b_users').where({ email }).update({
                 counter: verification.authenticationInfo.newCounter, // Update with new counter
             });
-            res.json({ success: true });
+            const token = jwt.sign({ id: ifUserExists.id }, process.env.JWT_SECRET, { expiresIn: '5h' });
+            res.json({ 
+                success: true,
+                token,
+                user: {
+                    id: ifUserExists.id,
+                    name: ifUserExists.name,
+                },
+            });
         } else {
             res.status(401).json({ success: false, error: 'Authentication failed' });
         }
@@ -209,7 +220,6 @@ app.post('/login-verify', async (req, res) => {
 
 app.get('/me', async (req, res) => {
     const token = req.headers.authorization.split(' ')[1];
-    // console.log(token, 'token');
     if (!token) {
         return res.status(401).json({ message: 'Token is required' });
     }

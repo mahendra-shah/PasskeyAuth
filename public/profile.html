@@ -72,11 +72,11 @@
     <script>
 
         // Check if user is already logged in
-        async function checkAuthentication() {
+        (async function checkAuthentication() {
             const token = localStorage.getItem('jwtToken');
             const passkey = localStorage.getItem('passkey');
             if (!token) {
-                window.location.replace('signup.html'); // Redirect to signup if not logged in
+                window.location.replace('/'); // Redirect to signup if not logged in
 
             }
             const user = await fetch('/me', {
@@ -87,20 +87,17 @@
             });
             if (!user) {
                 localStorage.removeItem('jwtToken'); // Clear token
-                window.location.replace('signup.html'); // Redirect to signup if token is invalid
+                alert('Session expired. Please login again.'); // Alert user
+                window.location.replace('/'); // Redirect to signup if token is invalid
             }
-            console.log(passkey, 'pass');
             if (passkey) {
                 window.location.replace('home.html'); // Redirect to home if passkey is already set up
             }
-        }
-
-        checkAuthentication();
+        })();
 
         document.getElementById('setup-passkey').addEventListener('click', async () => {
             const user = JSON.parse(localStorage.getItem('user')); // Assuming you stored email during signup
             const user_id = user.id;
-            console.log(user, 'user_id');
             try {
                 const response = await fetch(`/register-challenge/${user_id}`, {
                     method: 'POST',
@@ -116,7 +113,6 @@
 
                 // Start registration process
                 const credential = await SimpleWebAuthnBrowser.startRegistration(options);
-                console.log(credential, 'credential webauthn');
 
                 // Verify registration response with the server
                 const verifyResponse = await fetch(`/register-verify`, {
