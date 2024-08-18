@@ -25,7 +25,7 @@ if(!global.crypto) {
 const PORT = process.env.PORT||5002;
 
 app.use(cors());
-app.use(express.static('./public'));
+app.use(express.static('public'));
 app.use(express.json());
 
 const logger = winston.createLogger({
