@@ -17,7 +17,8 @@ const winston = require('winston');
 require('dotenv').config();
 
 const expectedOrigin = process.env.EXPECTED_ORIGIN || 'http://localhost:5002';
-const expectedRPID = process.env.EXPECTED_RPID||'localhost';
+const expectedRPID = process.env.NODE_ENV === 'production' ? 'passkey-auth-omega.vercel.app' : 'localhost';
+
 
 if(!global.crypto) {
     global.crypto = require('node:crypto');
