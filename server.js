@@ -47,6 +47,11 @@ app.use((req, res, next) => {
     next(); // Proceed to the next middleware or route handler
 });
 
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).send('Something broke!');
+});
+
 
 app.get('/health', (req, res) => {
     res.status(200).json({ status: "success", message: "I'm fine :)" });
