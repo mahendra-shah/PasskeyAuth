@@ -5,6 +5,7 @@ const cors = require('cors');
 const crypto = require('node:crypto');
 const base64url = require('base64url');
 const bcrypt = require('bcrypt');
+const path = require('path');
 const { 
     generateRegistrationOptions, 
     verifyRegistrationResponse, 
